@@ -1,0 +1,134 @@
+---
+title: "Linear Regression"
+author: "Priyanshu Agarwal"
+date: "12/04/2020"
+output: html_document
+---
+
+Linear regression is used to predict the value of an outcome variable Y based on one or more input predictor variables X. The aim is to establish a linear relationship (a mathematical formula) between the predictor variable(s) and the response variable, so that, we can use this formula to estimate the value of the response Y, when only the predictors (Xs) values are known.
+
+We'll first have to import our dataset. 
+For this project we are taking dataset from [Kaggle]:("https://www.kaggle.com/nehalbirla/vehicle-dataset-from-cardekho/data").
+
+```{r}
+dataSet = read.csv("/home/prinzz1208/Desktop/Work/Data Science/R/car data.csv",header = TRUE)
+head(dataSet)
+```
+
+The dataset which we are going to use has data about cars. It consists of 301 rows and 9 columns.
+
+We can see that our dataset also contains catagorial data which we will ignore as we don't want catagorial data for prediction.
+
+<!-- For this we'll have to do encoding of catagorial data. -->
+
+<!-- ```{r} -->
+<!-- dataSet$Transmission = as.numeric(factor(dataSet$Transmission)) -->
+<!-- dataSet$Fuel_Type = as.numeric(factor(dataSet$Fuel_Type)) -->
+<!-- head(dataSet) -->
+<!-- ``` -->
+
+Now we'll check the correlation of variables to get our predictor variables.
+```{r}
+cor(dataSet$Present_Price,dataSet$Selling_Price)
+cor(dataSet$Year,dataSet$Selling_Price)
+cor(dataSet$Kms_Driven,dataSet$Selling_Price)
+```
+
+From the result above we can say that Present Price and Selling Price have a very strong correlation but Kms_Driven and Year have a weak correlation with Selling Price although they can be used to in linear model but won't have much significance.  
+
+Now we'll plot our data using a scatter plot.
+```{r}
+plot(dataSet$Present_Price,dataSet$Selling_Price,xlab = 'Present Price',ylab = 'Selling Price')
+```
+
+We can see from this scatter plot that there is a linear relationship between the predictor variable(Present Price) and response variable(Selling Price) which is good because one of the underlying assumptions in linear regression is that the relationship between the response and predictor variables is linear and additive.
+
+Now for our prediction model we first have to devise a linear model.
+We will have to try different linear models and plot it against the predictor variable so that we could check if our model is correct for regression.
+
+First model:
+
+```{r}
+plot(dataSet$Present_Price,dataSet$Selling_Price,xlab = 'Present Price',ylab = 'Selling Price')
+model = lm(Selling_Price ~ Present_Price + Kms_Driven + Year, data = dataSet )
+lines(smooth.spline(dataSet$Present_Price,predict(model)),col = 'blue',lwd = '4')
+```
+
+From the plot, we can see that our model has problem of *Underfitting*.
+
+We can also check the accuracy of from its summary.
+
+```{r}
+summary(model)
+```
+
+From the summary we can see that our Residual standard error is near 2, which is not good as residual standard error is the measure of the variation of observations around the regression line. So to reduce this error we'll need to change our model.
+
+Second Model:
+
+Now we'll try to fit a polynomial model with 2 variables with maximum degree 2 to remove the underfitting problem.
+
+```{r}
+
+plot(dataSet$Present_Price,dataSet$Selling_Price,xlab = 'Present Price',ylab = 'Selling Price')
+model2 = lm(Selling_Price ~ poly(Present_Price,Year,Kms_Driven,degree = 2,raw = TRUE), data = dataSet )
+lines(smooth.spline(dataSet$Present_Price,predict(model2)),col = 'orange',lwd = '4')
+```
+
+From the plot we can say that it looks better than our previous model and it has also removed the problem of underfitting.
+
+Now to check accuracy:
+
+```{r}
+summary(model2)
+```
+
+From the summary we can infer that the residual Residual standard error is now 0.9687, which is good. Now we'll try the last model to check if we can improve our model.
+
+Third Model:
+
+Now we'll try to fit a polynomial model with 3 variables with maximum degree 4 to remove the underfitting problem.
+
+```{r}
+plot(dataSet$Present_Price,dataSet$Selling_Price,xlab = 'Present Price',ylab = 'Selling Price')
+model3 = lm(Selling_Price ~ poly(Present_Price,Year,Kms_Driven,degree = 4,raw = TRUE), data = dataSet )
+lines(smooth.spline(dataSet$Present_Price,predict(model3)),col = 'red',lwd = '4')
+```
+
+From the plot we can say that there is a slight different between the second model and third and third model fits better but we can also see that it overfits the data and hence has problem of overfitting so we will reject this highly complicated model.
+
+So our selected model is second model, And we can start training our model and perform predictions.
+
+For training our model we'll split our dataset in 2:8 ratio - 20% for test data and 80% for training our model
+
+```{r}
+ind = sample(2,nrow(dataSet),replace = TRUE,prob = c(0.7,0.3))
+trainingData = dataSet[ind == 1,]
+testData = dataSet[ind == 2,]
+```
+
+We have separated out our data and now we have to train our model.
+
+```{r}
+mod = lm(Selling_Price ~ poly( Present_Price,Year,Kms_Driven,degree = 2,raw = T),trainingData)
+
+```
+Now we will predict the values for Selling Price with our model.
+```{r}
+pred = cbind(predict(mod,testData))
+compare = unname(data.frame(pred,testData[3]))
+colnames(compare) = c("Actual","Predicted")
+head(compare,10)
+```
+
+Our predictions are not much accurate but they are acceptable.
+
+Now to check the accuracy of our model we'll find Root Mean Square Error (RMSE) and Mean Absolute Error (MAE).
+
+We'll use caret package for in-built RMSE and MAE functions.
+```{r}
+library(caret)
+MAE(predict(mod,testData),testData$Selling_Price)
+
+RMSE(predict(mod,testData),testData$Selling_Price)
+```
