@@ -5,10 +5,12 @@ date: "12/04/2020"
 output: html_document
 ---
 
-Linear regression is used to predict the value of an outcome variable Y based on one or more input predictor variables X. The aim is to establish a linear relationship (a mathematical formula) between the predictor variable(s) and the response variable, so that, we can use this formula to estimate the value of the response Y, when only the predictors (Xs) values are known.
+Linear regression is used to predict the value of an outcome variable Y based on one or more input predictor variables X. The aim is to establish a linear relationship (a mathematical formula) between the predictor variable(s) and the response variable, so that, we can use this formula to estimate the value of the response Y, when only the predictors (Xs) values are known.https://www.datanovia.com/en/lessons/identify-and-remove-duplicate-data-in-r/
 
-We'll first have to import our dataset. 
-For this project we are taking dataset from [Kaggle]:("https://www.kaggle.com/nehalbirla/vehicle-dataset-from-cardekho/data").
+We'll first have to import our datasiet. 
+For this project we are taking dataset from [Kaggle].
+
+Github Link : https://github.com/prinzz1208/acad-DS-LinearRegression/blob/master/car%20data.csv
 
 ```{r}
 dataSet = read.csv("/home/prinzz1208/Desktop/Work/Data Science/R/car data.csv",header = TRUE)
@@ -17,15 +19,32 @@ head(dataSet)
 
 The dataset which we are going to use has data about cars. It consists of 301 rows and 9 columns.
 
-We can see that our dataset also contains catagorial data which we will ignore as we don't want catagorial data for prediction.
+We will first check for NA elements in our data set.
 
-<!-- For this we'll have to do encoding of catagorial data. -->
+```{r}
+mean(is.na(dataSet))
+```
 
-<!-- ```{r} -->
-<!-- dataSet$Transmission = as.numeric(factor(dataSet$Transmission)) -->
-<!-- dataSet$Fuel_Type = as.numeric(factor(dataSet$Fuel_Type)) -->
-<!-- head(dataSet) -->
-<!-- ``` -->
+If we had even one NA element in our data set the mean would be a non-zero element and hence we don't have to check further for any NA element in any row or column.
+
+Beacause the mean of is.na(dataSet) is 0 we can say that our data set does not contain any NA value.
+
+Now to remove any duplicate we will use distinct function of dplyr library to remove all duplicate rows, if any.
+
+```{r message=FALSE, warning=FALSE}
+library(dplyr)
+dataSet = distinct(dataSet)
+```
+
+To see the distribution of data between variables we will use ggpairs() 
+function from GGally library.
+
+```{r message=FALSE, warning=FALSE}
+library(GGally)
+ggpairs(dataSet,columns = 2:8)
+```
+
+We can see that our dataset also contains catagorial data (because of box plot instead of correlation) which we will ignore as we don't want catagorial data for prediction.
 
 Now we'll check the correlation of variables to get our predictor variables.
 ```{r}
@@ -110,14 +129,14 @@ testData = dataSet[ind == 2,]
 We have separated out our data and now we have to train our model.
 
 ```{r}
-mod = lm(Selling_Price ~ poly( Present_Price,Year,Kms_Driven,degree = 2,raw = T),trainingData)
+mod = lm(Selling_Price ~ poly(Present_Price,Year,Kms_Driven,degree = 2,raw = T),trainingData)
 
 ```
 Now we will predict the values for Selling Price with our model.
 ```{r}
 pred = cbind(predict(mod,testData))
 compare = unname(data.frame(pred,testData[3]))
-colnames(compare) = c("Actual","Predicted")
+colnames(compare) = c("Predicted","Actual")
 head(compare,10)
 ```
 
@@ -132,3 +151,7 @@ MAE(predict(mod,testData),testData$Selling_Price)
 
 RMSE(predict(mod,testData),testData$Selling_Price)
 ```
+
+The result of MAE and RMSE are fine and hence the prediction model is acceptably accurate.
+
+Github link for the project : https://github.com/prinzz1208/acad-DS-LinearRegression.git
